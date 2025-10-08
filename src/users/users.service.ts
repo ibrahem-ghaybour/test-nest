@@ -4,6 +4,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { USER_REPOSITORY } from './user.constants';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
+import * as bcrypt from 'bcrypt';
+import { FindUsersDto } from './dto/find-users.dto';
 @Injectable()
 export class UsersService {
   constructor(
@@ -12,7 +14,13 @@ export class UsersService {
   ) { }
   async create(createUserDto: CreateUserDto) {
     try {
-      const user = await this.userRepository.save(createUserDto);
+      const hashedPassword = await bcrypt.hash(createUserDto.password, 12);
+
+      const user = await this.userRepository.save({
+        ...createUserDto,
+        password: hashedPassword,
+      });
+
       const { password, ...result } = user;
       return result;
     } catch (error) {
@@ -20,17 +28,33 @@ export class UsersService {
     }
   }
 
-  async findAll() {
-    try {
-      const users = await this.userRepository.find();
-      const result = users.map((user) => {
-        const { password, ...result } = user;
-        return result;
-      });
-      return result;
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+  async findAll(findUsersDto: FindUsersDto) {
+    const { page = 1, limit = 10, order = 'DESC', role, is_active, search } = findUsersDto;
+    let { sort = 'id' } = findUsersDto;
+    
+    const skip = (page - 1) * limit;
+    const allowedSort = ['id', 'name', 'email', 'createdAt', "is_active", "role"];
+    if (!allowedSort.includes(sort)) sort = 'id';
+
+    const qb = this.userRepository.createQueryBuilder('user');
+
+    if (role) qb.andWhere('user.role = :role', { role });
+    if (typeof is_active !== 'undefined') qb.andWhere('user.is_active = :is_active', { is_active });
+
+    if (search && search.trim().length) {
+      qb.andWhere(
+        '(user.name LIKE :search OR user.email LIKE :search)',
+        { search: `${search}%` }
+      );
     }
+
+    const [users, total] = await qb
+      .orderBy(`user.${sort}`, order)
+      .skip(skip)
+      .take(Math.min(limit, 100)) 
+      .getManyAndCount();
+
+    return { data:users, total, totalPages: Math.ceil(total / limit), currentPage: page };
   }
 
   async findOne(id: number) {
@@ -39,8 +63,7 @@ export class UsersService {
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
-      const { password, ...result } = user;
-      return result;
+      return user;
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }

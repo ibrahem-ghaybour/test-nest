@@ -1,19 +1,23 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, Index, CreateDateColumn, UpdateDateColumn } from "typeorm";
 
 @Entity()
+@Index(['role', 'is_active'])
 export class User {
     @PrimaryGeneratedColumn()
     id: number;
+
+    @Index()
     @Column()
     name: string;
 
+    @Index()
     @Column({ unique: true })
     email: string;
 
-    @Column()
+    @Column({select: false})
     password: string;
 
-    @Column({default:"user"})
+    @Column({ default: "user" })
     role: string;
 
     @Column({ default: true })
@@ -25,6 +29,16 @@ export class User {
     @Column({ nullable: true })
     age: number;
 
-    @Column({ nullable: true })
-    gender: 'male' | "female"
+    @Column({
+        nullable: true,
+        type: 'enum',
+        enum: ['male', 'female'],
+    })
+    gender?: 'male' | "female"
+
+    @CreateDateColumn()
+    createdAt: Date;
+
+    @UpdateDateColumn()
+    updatedAt: Date;
 }
