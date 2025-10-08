@@ -30,7 +30,7 @@ export class AuthService {
         const { password: _, ...rest } = user;
         return {
             ...rest,
-            token: this.jwtService.sign({ id: user.id })
+            token: this.jwtService.sign({ id: user.id ,email:user.email,name:user.name})
         };
     }
     async register(registerAuthDto: RegisterAuthDto) {
