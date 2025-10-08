@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { USER_REPOSITORY } from './user.constants';
@@ -16,7 +16,7 @@ export class UsersService {
       const { password, ...result } = user;
       return result;
     } catch (error) {
-      throw error;
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -29,7 +29,7 @@ export class UsersService {
       });
       return result;
     } catch (error) {
-      throw error;
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -37,12 +37,12 @@ export class UsersService {
     try {
       const user = await this.userRepository.findOneBy({ id });
       if (!user) {
-        return null;
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
       const { password, ...result } = user;
       return result;
     } catch (error) {
-      throw error;
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -50,7 +50,7 @@ export class UsersService {
     try {
       return this.userRepository.update(id, updateUserDto);
     } catch (error) {
-      throw error;
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -58,7 +58,7 @@ export class UsersService {
     try {
       return this.userRepository.delete(id);
     } catch (error) {
-      throw error;
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 }
