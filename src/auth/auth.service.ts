@@ -30,24 +30,33 @@ export class AuthService {
         const { password: _, ...rest } = user;
         return {
             ...rest,
-            token: this.jwtService.sign({ id: user.id ,email:user.email,name:user.name})
+            token: this.jwtService.sign({ id: user.id ,email:user.email,name:user.name,role:user.role})
         };
     }
     async register(registerAuthDto: RegisterAuthDto) {
-        const { email, password } = registerAuthDto;
+        const { email, password, name, avatar, age, gender } = registerAuthDto;
         const user = await this.userRepository.findOne({ where: { email } });
         if (user) {
             throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
         }
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = this.userRepository.create({
+            name,
             email,
             password: hashedPassword,
+            avatar,
+            age,
+            gender,
         });
-        return this.userRepository.save(newUser);
+        const savedUser = await this.userRepository.save(newUser);
+        const { password: _, ...rest } = savedUser;
+        return {
+            ...rest,
+            token: this.jwtService.sign({ id: savedUser.id ,email:savedUser.email,name:savedUser.name,role:savedUser.role})
+        };
     }
-    async profile(userId: number) {
-        const user = await this.userRepository.findOne({ where: { id: userId } });
+    async profile(id: any) {
+        const user = await this.userRepository.findOne({ where: { id } });
         if (!user) {
             throw new HttpException('User not found', HttpStatus.NOT_FOUND);
         }

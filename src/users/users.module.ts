@@ -13,6 +13,7 @@ import { userProviders } from './user.providers';
   ],
   exports: [
     ...userProviders,
+    UsersService,
   ],
 })
 export class UsersModule { }
